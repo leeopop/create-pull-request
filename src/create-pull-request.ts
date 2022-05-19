@@ -180,6 +180,17 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     )
     core.endGroup()
 
+    if (['updated'].includes(result.action)) {
+      const branchRemoteNameFull = `${branchRemoteName}/${inputs.branch}`
+      // The branch was updated. Check if there is actual change
+      core.startGroup(`Comparing actual diff against '${branchRemoteNameFull}'`)
+      const hasDiff = await git.hasDiff([branchRemoteNameFull])
+      if (!hasDiff) {
+        throw new Error(`There is no change to '${branchRemoteNameFull}'`)
+      }
+      core.endGroup()
+    }
+
     if (['created', 'updated'].includes(result.action)) {
       // The branch was created or updated
       core.startGroup(

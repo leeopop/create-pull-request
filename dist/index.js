@@ -389,6 +389,16 @@ function createPullRequest(inputs) {
             core.startGroup('Create or update the pull request branch');
             const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths);
             core.endGroup();
+            if (['updated'].includes(result.action)) {
+                const branchRemoteNameFull = `${branchRemoteName}/${inputs.branch}`;
+                // The branch was updated. Check if there is actual change
+                core.startGroup(`Comparing actual diff against '${branchRemoteNameFull}'`);
+                const hasDiff = yield git.hasDiff([branchRemoteNameFull]);
+                if (!hasDiff) {
+                    throw new Error(`There is no change to '${branchRemoteNameFull}'`);
+                }
+                core.endGroup();
+            }
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
                 core.startGroup(`Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`);
